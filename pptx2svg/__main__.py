@@ -269,8 +269,22 @@ class SvgExtractor(object):
 #===============================================================================
 
 if __name__ == '__main__':
+    import argparse
 
-    extractor = SvgExtractor('ppt/rat-test.pptx', 'svg')
+    parser = argparse.ArgumentParser(description='Convert Powerpoint slides to SVG.')
+
+    parser.add_argument('powerpoint', metavar='POWERPOINT_FILE',
+                        help='the Powerpoint file to convert')
+
+    parser.add_argument('output_dir', metavar='OUTPUT_DIRECTORY',
+                        help='directory in which to save SVG files')
+
+    args = parser.parse_args()
+
+    if not os.path.exists(args.output_dir):
+        os.makedirs(args.output_dir)
+
+    extractor = SvgExtractor(args.powerpoint, args.output_dir)
     extractor.slides_to_svg()
 
 #===============================================================================
