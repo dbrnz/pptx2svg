@@ -54,19 +54,9 @@ EMU_PER_DOT = EMU_PER_IN/DOTS_PER_IN
 
 #===============================================================================
 
-def svg_coords(x, y):
-#====================
-    return (x/EMU_PER_DOT, y/EMU_PER_DOT)
-
-def svg_units(emu):
-#===================
-    return emu/EMU_PER_DOT
-
-def svg_transform(m):
-#====================
-    return (          m[0, 0],            m[1, 0],
-                      m[0, 1],            m[1, 1],
-            svg_units(m[0, 2]), svg_units(m[1, 2]))
+def transform_point(transform, point):
+#=====================================
+    return (transform@[point[0], point[1], 1.0])[:2]
 
 #===============================================================================
 
@@ -138,19 +128,18 @@ class SvgLayer(object):
     #========================
         self.__dwg.saveas(filename)
 
-    def process(self):
-    #=================
-        self.process_shape_list(self.__slide.shapes, self.__dwg, True)
+    def process(self, transform):
+    #============================
+        self.process_shape_list(self.__slide.shapes, self.__dwg, transform, True)
 
-    def process_group(self, group, svg_parent):
-    #==========================================
+    def process_group(self, group, svg_parent, transform):
+    #=====================================================
         svg_group = self.__dwg.g(id=group.shape_id)
-        svg_group.matrix(*svg_transform(DrawMLTransform(group).matrix()))
         svg_parent.add(svg_group)
-        self.process_shape_list(group.shapes, svg_group)
+        self.process_shape_list(group.shapes, svg_group, transform@DrawMLTransform(group).matrix())
 
-    def process_shape_list(self, shapes, svg_parent, outermost=False):
-    #=================================================================
+    def process_shape_list(self, shapes, svg_parent, transform, outermost=False):
+    #============================================================================
         if outermost:
             print('Processing shape list...')
             progress_bar = tqdm(total=len(shapes),
@@ -160,9 +149,9 @@ class SvgLayer(object):
             if (shape.shape_type == MSO_SHAPE_TYPE.AUTO_SHAPE
              or shape.shape_type == MSO_SHAPE_TYPE.FREEFORM
              or isinstance(shape, pptx.shapes.connector.Connector)):
-                self.process_shape(shape, svg_parent)
+                self.process_shape(shape, svg_parent, transform)
             elif shape.shape_type == MSO_SHAPE_TYPE.GROUP:
-                self.process_group(shape, svg_parent)
+                self.process_group(shape, svg_parent, transform)
             elif (shape.shape_type == MSO_SHAPE_TYPE.TEXT_BOX
                or shape.shape_type == MSO_SHAPE_TYPE.PICTURE):
                 pass
@@ -173,15 +162,15 @@ class SvgLayer(object):
         if outermost:
             progress_bar.close()
 
-    def process_shape(self, shape, svg_parent):
-    #==========================================
+    def process_shape(self, shape, svg_parent, transform):
+    #=====================================================
         geometry = Geometry(shape)
         for path in geometry.path_list:
             svg_path = self.__dwg.path(fill='none', class_='non-scaling-stroke')
             if shape.name.startswith('.'):
                 svg_path.attribs['id'] = adobe_encode(shape.name)
             bbox = (shape.width, shape.height) if path.w is None else (path.w, path.h)
-            svg_path.matrix(*svg_transform(DrawMLTransform(shape, bbox).matrix()))
+            T = transform@DrawMLTransform(shape, bbox).matrix()
             first_point = None
             current_point = None
             closed = False
@@ -196,9 +185,9 @@ class SvgLayer(object):
                     pt = (current_point[0] - p1[0] + p2[0],
                           current_point[1] - p1[1] + p2[1])
                     large_arc_flag = 1 if swAng >= PI else 0
-                    svg_path.push('A', svg_units(wR), svg_units(hR),
+                    svg_path.push('A', *transform_point(T, (wR, hR)),
                                        0, large_arc_flag, 1,
-                                       svg_units(pt[0]), svg_units(pt[1]))
+                                       *transform_point(T, pt))
                     current_point = pt
 
                 elif c.tag == DML('close'):
@@ -210,17 +199,18 @@ class SvgLayer(object):
                     coords = []
                     for p in c.getchildren():
                         pt = geometry.point(p)
-                        coords.append(svg_units(pt[0]))
-                        coords.append(svg_units(pt[1]))
+                        coords.extend(transform_point(T, pt))
                         current_point = pt
                     svg_path.push('C', *coords)
                 elif c.tag == DML('lnTo'):
                     pt = geometry.point(c.pt)
-                    svg_path.push('L', svg_units(pt[0]), svg_units(pt[1]))
+                    coords = transform_point(T, pt)
+                    svg_path.push('L', *coords)
                     current_point = pt
                 elif c.tag == DML('moveTo'):
                     pt = geometry.point(c.pt)
-                    svg_path.push('M', svg_units(pt[0]), svg_units(pt[1]))
+                    coords = transform_point(T, pt)
+                    svg_path.push('M', *coords)
                     if first_point is None:
                         first_point = pt
                     current_point = pt
@@ -228,8 +218,7 @@ class SvgLayer(object):
                     coords = []
                     for p in c.getchildren():
                         pt = geometry.point(p)
-                        coords.append(svg_units(pt[0]))
-                        coords.append(svg_units(pt[1]))
+                        coords.extend(transform_point(T, pt))
                         current_point = pt
                     svg_path.push('Q', *coords)
                 else:
@@ -252,13 +241,17 @@ class SvgExtractor(object):
     def __init__(self, pptx, output_dir):
         self.__pptx = Presentation(pptx)
         self.__slides = self.__pptx.slides
-        self.__svg_size = (svg_units(self.__pptx.slide_width), svg_units(self.__pptx.slide_height))
+        self.__transform = np.array([[1.0/EMU_PER_DOT,               0, 0],
+                                     [              0, 1.0/EMU_PER_DOT, 0],
+                                     [              0,               0, 1]])
+        (pptx_width, pptx_height) = (self.__pptx.slide_width, self.__pptx.slide_height)
+        self.__svg_size = transform_point(self.__transform, (pptx_width, pptx_height))
         self.__output_dir = output_dir
 
     def slide_to_svg(self, slide, slide_number):
     #===========================================
         layer = SvgLayer(self.__svg_size, slide)
-        layer.process()
+        layer.process(self.__transform)
         layer.save(os.path.join(self.__output_dir, 'slide-{:02d}.svg'.format(slide_number)))
 
     def slides_to_svg(self):
