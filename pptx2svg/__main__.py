@@ -134,7 +134,7 @@ class SvgLayer(object):
 
     def process_group(self, group, svg_parent, transform):
     #=====================================================
-        svg_group = self.__dwg.g(id=group.shape_id)
+        svg_group = self.__dwg.g(id=adobe_encode(group.name))
         svg_parent.add(svg_group)
         self.process_shape_list(group.shapes, svg_group, transform@DrawMLTransform(group).matrix())
 
@@ -166,9 +166,8 @@ class SvgLayer(object):
     #=====================================================
         geometry = Geometry(shape)
         for path in geometry.path_list:
-            svg_path = self.__dwg.path(fill='none', class_='non-scaling-stroke')
-            if shape.name.startswith('.'):
-                svg_path.attribs['id'] = adobe_encode(shape.name)
+            svg_path = self.__dwg.path(id=adobe_encode(shape.name),
+                                       fill='none', class_='non-scaling-stroke')
             bbox = (shape.width, shape.height) if path.w is None else (path.w, path.h)
             T = transform@DrawMLTransform(shape, bbox).matrix()
             first_point = None
