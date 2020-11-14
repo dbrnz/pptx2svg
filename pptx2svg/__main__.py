@@ -39,6 +39,7 @@ from pptx.enum.shapes import MSO_SHAPE_TYPE
 import svgwrite
 
 from tqdm import tqdm
+from pptx.util import Length
 
 #===============================================================================
 
@@ -55,6 +56,9 @@ EMU_PER_IN  = 914400
 DOTS_PER_IN = 96  ### 300 ??
 
 EMU_PER_DOT = EMU_PER_IN/DOTS_PER_IN
+
+# Minimum width for a stroked path in points
+MIN_STROKE_WIDTH = 0.5
 
 #===============================================================================
 
@@ -294,14 +298,31 @@ class SvgLayer(object):
                 else:
                     print('Unknown path element: {}'.format(c.tag))
 
-            ### Get style attributes from PPT
-            svg_path.attribs['stroke-width'] = 3
             if closed:
-                svg_path.attribs['fill'] = '#808080'   ## shape.fill and shape.line
-                svg_path.attribs['opacity'] = 0.3
-                svg_path.attribs['stroke'] = 'red'
-            else:
-                svg_path.attribs['stroke'] = 'blue'
+                if shape.fill.type == MSO_FILL_TYPE.SOLID:
+                    svg_path.attribs['fill'] = self.__colour_map.lookup(shape.fill.fore_color)
+                    alpha = shape.fill.fore_color.alpha
+                    if alpha < 1.0:
+                        svg_path.attribs['opacity'] = alpha
+                elif shape.fill.type == MSO_FILL_TYPE.GRADIENT:
+                    svg_path.attribs['fill'] = '#CCCCCC'   ## TEMP
+                    svg_path.attribs['opacity'] = 0.3      ## TEMP
+                elif shape.fill.type is None:
+                    svg_path.attribs['fill'] = '#000000'
+                elif shape.fill.type != MSO_FILL_TYPE.BACKGROUND:
+                    print('Unsupported fill type: {}'.format(shape.fill.type))
+
+            if shape.line.fill.type == MSO_FILL_TYPE.SOLID:
+                svg_path.attribs['stroke'] = self.__colour_map.lookup(shape.line.color)
+                alpha = shape.line.fill.fore_color.alpha
+                if alpha < 1.0:
+                    svg_path.attribs['stroke-opacity'] = alpha
+            elif shape.line.fill.type is None:
+                svg_path.attribs['stroke'] = '#000000'
+            elif shape.line.fill.type != MSO_FILL_TYPE.BACKGROUND:
+                print('Unsupported line fill type: {}'.format(shape.line.fill.type))
+
+            svg_path.attribs['stroke-width'] = max(Length(shape.line.width).pt, MIN_STROKE_WIDTH)
 
             svg_parent.add(svg_path)
 
