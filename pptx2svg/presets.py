@@ -51,9 +51,6 @@ ns._nsmap['drawml'] = ("http://www.ecma-international.org/flat/publications/stan
 
 class PresetShapeDefinition(BaseOxmlElement):
     """`drawml:presetShapeDefinition` element class."""
-
-    presetShapeLst = ZeroOrMore("drawml:presetShape")
-
     @classmethod
     def new(cls, xml):
         """Return shape definitions configured as ..."""
@@ -62,7 +59,6 @@ class PresetShapeDefinition(BaseOxmlElement):
 #===============================================================================
 
 class Geometry2D(BaseOxmlElement):
-
     avLst = ZeroOrOne("a:avLst")
     gdLst = ZeroOrOne("a:gdLst")
     pathLst = ZeroOrOne("a:pathLst")

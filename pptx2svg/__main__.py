@@ -18,13 +18,12 @@
 #
 #===============================================================================
 
-from math import sqrt, sin, cos, pi as PI
-
 import colorsys
 import os
 import re
 import string
 
+from math import sqrt, sin, cos, pi as PI
 from zipfile import ZipFile
 
 #===============================================================================
@@ -73,6 +72,8 @@ def ellipse_point(a, b, theta):
     return (a*b_cos_theta/circle_radius, b*a_sin_theta/circle_radius)
 
 #===============================================================================
+
+# Helpers for encoding names for Adobe Illustrator
 
 def match_to_hex(m):
 #===================
