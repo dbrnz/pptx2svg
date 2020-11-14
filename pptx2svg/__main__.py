@@ -215,7 +215,7 @@ class SvgLayer(object):
 
     def save(self, filename):
     #========================
-        self.__dwg.saveas(filename)
+        self.__dwg.saveas(filename, pretty=True, indent=4)
 
     def process(self, transform):
     #============================
