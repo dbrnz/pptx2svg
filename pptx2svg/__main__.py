@@ -146,6 +146,30 @@ class ColourMap(object):
 
 #===============================================================================
 
+class Gradient(object):
+    def __init__(self, id, fill, colour_map):
+        self.__id = id
+        self.__kind = 'Linear'
+        self.__angle = fill.gradient_angle
+        self.__stops = [(stop.position, colour_map.lookup(stop.color))
+                            for stop in fill.gradient_stops]
+
+    @property
+    def id(self):
+        return self.__id
+
+    def svg_definition(self):
+    #========================
+        stops = ['<stop offset="{}%" stop-color="{}"/>'.format(100*stop[0], stop[1])
+                    for stop in self.__stops]
+        return ('<{gradient}Gradient id="{id}">{stops}</{gradient}Gradient>'
+                .format(gradient=self.__kind, id=self.__id, stops='/n'.join(stops)))
+
+
+## Want list of unique gradient definitions
+
+#===============================================================================
+
 class DrawMLTransform(object):
     def __init__(self, shape, bbox=None):
         xfrm = shape.element.xfrm
@@ -305,6 +329,7 @@ class SvgLayer(object):
                     if alpha < 1.0:
                         svg_path.attribs['opacity'] = alpha
                 elif shape.fill.type == MSO_FILL_TYPE.GRADIENT:
+## WIP              gradient = Gradient('id', shape.fill, self.__colour_map)
                     svg_path.attribs['fill'] = '#CCCCCC'   ## TEMP
                     svg_path.attribs['opacity'] = 0.3      ## TEMP
                 elif shape.fill.type is None:
