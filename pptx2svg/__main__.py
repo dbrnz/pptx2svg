@@ -226,9 +226,19 @@ class SvgLayer(object):
     def process_shape(self, shape, svg_parent, transform):
     #=====================================================
         geometry = Geometry(shape)
+        id = adobe_encode(shape.name)
+        if len(geometry) > 1:
+            # Add a group to hold multiple paths
+            ## We should really add a `.group` placeholder
+            group = self.__dwg.g(id=id)
+            svg_parent.add(group)
+            svg_parent = group
+            id = None
+
         for path in geometry.path_list:
-            svg_path = self.__dwg.path(id=adobe_encode(shape.name),
-                                       fill='none', class_='non-scaling-stroke')
+            svg_path = self.__dwg.path(fill='none', class_='non-scaling-stroke')
+            if id is not None:
+                svg_path.attribs['id'] = id
             bbox = (shape.width, shape.height) if path.w is None else (path.w, path.h)
             T = transform@DrawMLTransform(shape, bbox).matrix()
             first_point = None

@@ -171,6 +171,9 @@ class Geometry(object):
             for gd in adjustments:
                 self._variables[gd.name] = gd.fmla
 
+    def __len__(self):
+        return len(self._geometry.pathLst)
+
     @property
     def path_list(self):
         return self._geometry.pathLst
