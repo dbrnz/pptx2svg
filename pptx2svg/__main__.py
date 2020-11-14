@@ -20,9 +20,12 @@
 
 from math import sqrt, sin, cos, pi as PI
 
+import colorsys
 import os
 import re
 import string
+
+from zipfile import ZipFile
 
 #===============================================================================
 
@@ -30,6 +33,8 @@ import numpy as np
 
 import pptx.shapes.connector
 from pptx import Presentation
+from pptx.dml.color import RGBColor
+from pptx.enum.dml import MSO_COLOR_TYPE, MSO_FILL_TYPE, MSO_THEME_COLOR
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 
 import svgwrite
@@ -39,7 +44,7 @@ from tqdm import tqdm
 #===============================================================================
 
 from formula import Geometry, radians
-from presets import DML
+from presets import DML, ThemeDefinition
 
 #===============================================================================
 
@@ -82,6 +87,56 @@ def adobe_encode(s):
 
 #===============================================================================
 
+class Theme(object):
+    def __init__(self, pptx_source):
+        with ZipFile(pptx_source, 'r') as presentation:
+            for info in presentation.infolist():
+                if info.filename.startswith('ppt/theme/'):
+                    self.__theme_definition = ThemeDefinition.new(presentation.read(info))
+                    break
+
+    def colour_scheme(self):
+    #=======================
+        return self.__theme_definition.themeElements.clrScheme
+
+#===============================================================================
+
+class ColourMap(object):
+    def __init__(self, ppt_theme, slide):
+        self.__colour_defs = {}
+        for colour_def in ppt_theme.colour_scheme():
+            defn = colour_def[0]
+            if defn.tag == DML('sysClr'):
+                self.__colour_defs[colour_def.tag] = RGBColor.from_string(defn.attrib['lastClr'])
+            elif defn.tag == DML('srgbClr'):
+                self.__colour_defs[colour_def.tag] = RGBColor.from_string(defn.val)
+        # The slide's layout master can have colour aliases
+        colour_map = slide.slide_layout.slide_master.element.clrMap.attrib
+        for key, value in colour_map.items():
+            if key != value:
+                self.__colour_defs[DML(key)] = self.__colour_defs[DML(value)]
+
+    def lookup(self, colour_format):
+    #===============================
+        rgb = None
+        if colour_format.type == MSO_COLOR_TYPE.RGB:
+            rgb = colour_format.rgb
+        elif colour_format.type == MSO_COLOR_TYPE.SCHEME:
+            key = MSO_THEME_COLOR.to_xml(colour_format.theme_color)
+            rgb = self.__colour_defs.get(DML(key))
+        if rgb is None:
+            import pdb; pdb.set_trace()
+            raise ValueError('Unknown colour...')
+        brightness = colour_format.brightness
+        if brightness != 0.0:
+            hsv = list(colorsys.rgb_to_hsv(*(np.array(rgb)/255.0)))
+            hsv[2] *= (brightness + 1.0)
+            colour = np.uint8(255*np.array(colorsys.hsv_to_rgb(*hsv)) + 0.5)
+            rgb = RGBColor(*colour.tolist())
+        return '#{}'.format(str(rgb))
+
+#===============================================================================
+
 class DrawMLTransform(object):
     def __init__(self, shape, bbox=None):
         xfrm = shape.element.xfrm
@@ -119,8 +174,9 @@ class DrawMLTransform(object):
 #===============================================================================
 
 class SvgLayer(object):
-    def __init__(self, size, slide):
+    def __init__(self, size, slide, ppt_theme):
         self.__slide = slide
+        self.__colour_map = ColourMap(ppt_theme, slide)
         self.__dwg = svgwrite.Drawing(filename=None, size=size)
         self.__dwg.defs.add(self.__dwg.style('.non-scaling-stroke { vector-effect: non-scaling-stroke; }'))
 
@@ -239,6 +295,7 @@ class SvgLayer(object):
 class SvgExtractor(object):
     def __init__(self, pptx, output_dir, debug=False):
         self.__pptx = Presentation(pptx)
+        self.__theme = Theme(pptx)
         self.__slides = self.__pptx.slides
         self.__transform = np.array([[1.0/EMU_PER_DOT,               0, 0],
                                      [              0, 1.0/EMU_PER_DOT, 0],
@@ -253,7 +310,7 @@ class SvgExtractor(object):
         if self.__debug:
             with open(os.path.join(self.__output_dir, 'slide-{:02d}.xml'.format(slide_number)), 'w') as xml:
                 xml.write(slide.element.xml)
-        layer = SvgLayer(self.__svg_size, slide)
+        layer = SvgLayer(self.__svg_size, slide, self.__theme)
         layer.process(self.__transform)
         layer.save(os.path.join(self.__output_dir, 'slide-{:02d}.svg'.format(slide_number)))
 

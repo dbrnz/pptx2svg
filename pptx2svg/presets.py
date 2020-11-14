@@ -23,11 +23,15 @@ import os.path
 import pptx.oxml as oxml
 import pptx.oxml.ns as ns
 
+from pptx.oxml.theme import CT_OfficeStyleSheet
+
 from pptx.oxml.shapes.autoshape import CT_GeomGuideList
 from pptx.oxml.simpletypes import XsdString
+from pptx.oxml.slide import _BaseSlideElement
 
 from pptx.oxml.xmlchemy import (
     BaseOxmlElement,
+    OneAndOnlyOne,
     RequiredAttribute,
     ZeroOrMore,
     ZeroOrOne
@@ -90,5 +94,60 @@ class Shapes(object):
     @staticmethod
     def lookup(name):
         return Shapes.definitions_[name]
+
+#===============================================================================
+#===============================================================================
+
+class ThemeDefinition(CT_OfficeStyleSheet):
+    name = RequiredAttribute("name", XsdString)
+    themeElements = OneAndOnlyOne("a:themeElements")
+
+    @classmethod
+    def new(cls, xml):
+        """Return theme definition"""
+        t = oxml.parse_xml(xml)
+        return t
+
+#===============================================================================
+
+class ThemeElements(BaseOxmlElement):
+    clrScheme = OneAndOnlyOne("a:clrScheme")
+
+#===============================================================================
+
+class ColourScheme(BaseOxmlElement):
+    name = RequiredAttribute("name", XsdString)
+
+#===============================================================================
+
+oxml.register_element_cls("a:theme", ThemeDefinition)
+oxml.register_element_cls("a:themeElements", ThemeElements)
+oxml.register_element_cls("a:clrScheme", ColourScheme)
+
+#===============================================================================
+
+class CT_SlideMasterUpdated(_BaseSlideElement):
+    """
+    ``<p:sldMaster>`` element, root of a slide master part
+    """
+
+    _tag_seq = (
+        "p:cSld",
+        "p:clrMap",
+        "p:sldLayoutIdLst",
+        "p:transition",
+        "p:timing",
+        "p:hf",
+        "p:txStyles",
+        "p:extLst",
+    )
+    cSld = OneAndOnlyOne("p:cSld")
+    clrMap = OneAndOnlyOne("p:clrMap")    ### We need access to clrMap
+    sldLayoutIdLst = ZeroOrOne("p:sldLayoutIdLst", successors=_tag_seq[3:])
+    del _tag_seq
+
+#===============================================================================
+
+oxml.register_element_cls("p:sldMaster", CT_SlideMasterUpdated)
 
 #===============================================================================
