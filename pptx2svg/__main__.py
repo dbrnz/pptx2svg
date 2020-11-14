@@ -253,9 +253,9 @@ class SvgLayer(object):
 
     def process_shape(self, shape, svg_parent, transform):
     #=====================================================
+        id = (adobe_encode(shape.name) if shape.name != '.siblings' else None)
         geometry = Geometry(shape)
-        id = adobe_encode(shape.name)
-        if len(geometry) > 1:
+        if id is not None and len(geometry) > 1:
             # Add a group to hold multiple paths
             ## We should really add a `.group` placeholder
             group = self.__dwg.g(id=id)
