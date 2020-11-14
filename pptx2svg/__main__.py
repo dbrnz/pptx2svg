@@ -53,7 +53,7 @@ from presets import DML, ThemeDefinition
 EMU_PER_CM  = 360000
 EMU_PER_IN  = 914400
 
-DOTS_PER_IN = 96  ### 300 ??
+DOTS_PER_IN = 72
 
 EMU_PER_DOT = EMU_PER_IN/DOTS_PER_IN
 
