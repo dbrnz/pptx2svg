@@ -136,6 +136,8 @@ class ColourMap(object):
         if brightness != 0.0:
             hsv = list(colorsys.rgb_to_hsv(*(np.array(rgb)/255.0)))
             hsv[2] *= (brightness + 1.0)
+            if hsv[2] > 1.0:
+                hsv[2] = 1.0
             colour = np.uint8(255*np.array(colorsys.hsv_to_rgb(*hsv)) + 0.5)
             rgb = RGBColor(*colour.tolist())
         return '#{}'.format(str(rgb))
