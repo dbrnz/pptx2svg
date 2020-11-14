@@ -37,7 +37,7 @@ from tqdm import tqdm
 import pptx.shapes.connector
 from pptx import Presentation
 from pptx.dml.color import RGBColor
-from pptx.enum.dml import MSO_COLOR_TYPE, MSO_FILL_TYPE, MSO_THEME_COLOR
+from pptx.enum.dml import MSO_COLOR_TYPE, MSO_FILL_TYPE, MSO_THEME_COLOR, MSO_LINE_DASH_STYLE
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.util import Length
 
@@ -347,7 +347,19 @@ class SvgLayer(object):
             elif shape.line.fill.type != MSO_FILL_TYPE.BACKGROUND:
                 print('Unsupported line fill type: {}'.format(shape.line.fill.type))
 
-            svg_path.attribs['stroke-width'] = max(Length(shape.line.width).pt, MIN_STROKE_WIDTH)
+            stroke_width = max(Length(shape.line.width).pt, MIN_STROKE_WIDTH)
+            svg_path.attribs['stroke-width'] = stroke_width
+            if shape.line.dash_style is not None:
+                if shape.line.dash_style == MSO_LINE_DASH_STYLE.DASH:
+                    svg_path.attribs['stroke-dasharray'] = 4*stroke_width
+                elif shape.line.dash_style == MSO_LINE_DASH_STYLE.DASH_DOT:
+                    svg_path.attribs['stroke-dasharray'] = '{} {} {} {}'.format(4*stroke_width, stroke_width, stroke_width, stroke_width)
+                elif shape.line.dash_style == MSO_LINE_DASH_STYLE.LONG_DASH:
+                    svg_path.attribs['stroke-dasharray'] = '{} {}'.format(4*stroke_width, stroke_width)
+                elif shape.line.dash_style == MSO_LINE_DASH_STYLE.SQUARE_DOT:
+                    svg_path.attribs['stroke-dasharray'] = '{} {}'.format(2*stroke_width, stroke_width)
+                elif shape.line.dash_style != MSO_LINE_DASH_STYLE.SOLID:
+                    print('Unsupported line dash style: {}'.format(shape.line.dash_style))
 
             svg_parent.add(svg_path)
 
