@@ -237,7 +237,7 @@ class SvgLayer(object):
 #===============================================================================
 
 class SvgExtractor(object):
-    def __init__(self, pptx, output_dir):
+    def __init__(self, pptx, output_dir, debug=False):
         self.__pptx = Presentation(pptx)
         self.__slides = self.__pptx.slides
         self.__transform = np.array([[1.0/EMU_PER_DOT,               0, 0],
@@ -246,9 +246,13 @@ class SvgExtractor(object):
         (pptx_width, pptx_height) = (self.__pptx.slide_width, self.__pptx.slide_height)
         self.__svg_size = transform_point(self.__transform, (pptx_width, pptx_height))
         self.__output_dir = output_dir
+        self.__debug = debug
 
     def slide_to_svg(self, slide, slide_number):
     #===========================================
+        if self.__debug:
+            with open(os.path.join(self.__output_dir, 'slide-{:02d}.xml'.format(slide_number)), 'w') as xml:
+                xml.write(slide.element.xml)
         layer = SvgLayer(self.__svg_size, slide)
         layer.process(self.__transform)
         layer.save(os.path.join(self.__output_dir, 'slide-{:02d}.svg'.format(slide_number)))
@@ -265,6 +269,8 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Convert Powerpoint slides to SVG.')
 
+    parser.add_argument('-d', '--debug', action='store_true', help='save DrawML to aid with debugging')
+
     parser.add_argument('powerpoint', metavar='POWERPOINT_FILE',
                         help='the Powerpoint file to convert')
 
@@ -276,7 +282,7 @@ if __name__ == '__main__':
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
 
-    extractor = SvgExtractor(args.powerpoint, args.output_dir)
+    extractor = SvgExtractor(args.powerpoint, args.output_dir, args.debug)
     extractor.slides_to_svg()
 
 #===============================================================================
