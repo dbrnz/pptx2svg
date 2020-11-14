@@ -123,15 +123,13 @@ class ColourMap(object):
 
     def lookup(self, colour_format):
     #===============================
-        rgb = None
         if colour_format.type == MSO_COLOR_TYPE.RGB:
             rgb = colour_format.rgb
         elif colour_format.type == MSO_COLOR_TYPE.SCHEME:
             key = MSO_THEME_COLOR.to_xml(colour_format.theme_color)
-            rgb = self.__colour_defs.get(DML(key))
-        if rgb is None:
-            import pdb; pdb.set_trace()
-            raise ValueError('Unknown colour...')
+            rgb = self.__colour_defs[DML(key)]
+        else:
+            raise ValueError('Unsupported colour format: {}'.format(colour_format.type))
         brightness = colour_format.brightness
         if brightness != 0.0:
             hsv = list(colorsys.rgb_to_hsv(*(np.array(rgb)/255.0)))
