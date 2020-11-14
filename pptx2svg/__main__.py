@@ -29,16 +29,16 @@ from zipfile import ZipFile
 #===============================================================================
 
 import numpy as np
+import svgwrite
+from tqdm import tqdm
+
+#===============================================================================
 
 import pptx.shapes.connector
 from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.enum.dml import MSO_COLOR_TYPE, MSO_FILL_TYPE, MSO_THEME_COLOR
 from pptx.enum.shapes import MSO_SHAPE_TYPE
-
-import svgwrite
-
-from tqdm import tqdm
 from pptx.util import Length
 
 #===============================================================================
