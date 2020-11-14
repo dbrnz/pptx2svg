@@ -23,6 +23,8 @@ import os.path
 import pptx.oxml as oxml
 import pptx.oxml.ns as ns
 
+from pptx.dml.color import ColorFormat
+from pptx.oxml.dml.color import CT_Percentage, _BaseColorElement
 from pptx.oxml.theme import CT_OfficeStyleSheet
 
 from pptx.oxml.shapes.autoshape import CT_GeomGuideList
@@ -145,5 +147,24 @@ class CT_SlideMasterUpdated(_BaseSlideElement):
 #===============================================================================
 
 oxml.register_element_cls("p:sldMaster", CT_SlideMasterUpdated)
+
+#===============================================================================
+
+# Monkey patching color to get alpha...
+
+oxml.register_element_cls('a:alpha', CT_Percentage)
+
+_BaseColorElement.alpha = ZeroOrOne("a:alpha")
+_BaseColorElement.alpha.populate_class_members(_BaseColorElement, "alpha")
+
+ColorFormat.alpha = property(lambda self: (self._color._xClr.alpha.val
+                                 if self._color._xClr.alpha is not None
+                                 else 1.0))
+ColorFormat.lumMod = property(lambda self: (self._color._xClr.lumMod.val
+                                  if self._color._xClr.lumMod is not None
+                                  else None))
+ColorFormat.lumOff = property(lambda self: (self._color._xClr.lumOff.val
+                                  if self._color._xClr.lumOff is not None
+                                  else None))
 
 #===============================================================================
