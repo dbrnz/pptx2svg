@@ -58,6 +58,10 @@ EMU_PER_DOT = EMU_PER_IN/DOTS_PER_IN
 
 #===============================================================================
 
+def svg_units(emu):
+#===================
+    return emu/EMU_PER_DOT
+
 def transform_point(transform, point):
 #=====================================
     return (transform@[point[0], point[1], 1.0])[:2]
@@ -241,7 +245,7 @@ class SvgLayer(object):
                     pt = (current_point[0] - p1[0] + p2[0],
                           current_point[1] - p1[1] + p2[1])
                     large_arc_flag = 1 if swAng >= PI else 0
-                    svg_path.push('A', *transform_point(T, (wR, hR)),
+                    svg_path.push('A', svg_units(wR), svg_units(hR),
                                        0, large_arc_flag, 1,
                                        *transform_point(T, pt))
                     current_point = pt
