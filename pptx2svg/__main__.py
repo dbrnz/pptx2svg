@@ -194,8 +194,7 @@ class Gradient(object):
         return ('<{gradient}Gradient id="{id}">{stops}</{gradient}Gradient>'
                 .format(gradient=self.__kind, id=self.__id, stops='/n'.join(stops)))
 
-
-## Want list of unique gradient definitions
+## WIP  Want list of unique gradient definitions
 
 #===============================================================================
 
