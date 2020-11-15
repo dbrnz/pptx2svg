@@ -24,10 +24,12 @@ import pptx.oxml as oxml
 import pptx.oxml.ns as ns
 
 from pptx.dml.color import ColorFormat
+from pptx.dml.line import LineFormat
 from pptx.oxml.dml.color import CT_Percentage, _BaseColorElement
 from pptx.oxml.theme import CT_OfficeStyleSheet
 
 from pptx.oxml.shapes.autoshape import CT_GeomGuideList
+from pptx.oxml.shapes.shared import CT_LineProperties
 from pptx.oxml.simpletypes import XsdString
 from pptx.oxml.slide import _BaseSlideElement
 
@@ -166,5 +168,21 @@ ColorFormat.lumMod = property(lambda self: (self._color._xClr.lumMod.val
 ColorFormat.lumOff = property(lambda self: (self._color._xClr.lumOff.val
                                   if self._color._xClr.lumOff is not None
                                   else None))
+
+#===============================================================================
+
+# Monkey patching line properties to get end types...
+
+CT_LineProperties.headEnd = ZeroOrOne("a:headEnd")
+CT_LineProperties.headEnd.populate_class_members(CT_LineProperties, "headEnd")
+LineFormat.headEnd = property(lambda self: (self._ln.headEnd.attrib
+                                  if self._ln is not None and self._ln.headEnd is not None
+                                  else {}))
+
+CT_LineProperties.tailEnd = ZeroOrOne("a:tailEnd")
+CT_LineProperties.tailEnd.populate_class_members(CT_LineProperties, "tailEnd")
+LineFormat.tailEnd = property(lambda self: (self._ln.tailEnd.attrib
+                                  if self._ln is not None and self._ln.tailEnd is not None
+                                  else {}))
 
 #===============================================================================
