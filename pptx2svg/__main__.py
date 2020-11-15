@@ -92,7 +92,6 @@ ARROW_MARKERS = {
     'triangle-tail': 'M 0 0 L 10 5 L 0 10 z'
 }
 
-
 ## NB. Adobe Illustrator 2020 doesn't appear to support marker definitions in SVG
 
 def add_marker_definitions(drawing):
