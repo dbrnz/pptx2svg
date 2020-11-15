@@ -81,6 +81,35 @@ def ellipse_point(a, b, theta):
 
 #===============================================================================
 
+ARROW_MARKERS = {
+    'triangle-head': 'M 10 0 L 0 5 L 10 10 z',
+    'triangle-tail': 'M 0 0 L 10 5 L 0 10 z'
+}
+
+
+## NB. Adobe Illustrator 2020 doesn't appear to support marker definitions in SVG
+
+def add_marker_definitions(drawing):
+#===================================
+    # arrowhead markers (see https://developer.mozilla.org/en-US/docs/Web/SVG/Element/marker)
+    for id, path in ARROW_MARKERS.items():
+        marker = drawing.marker(id=id,
+                                viewBox="0 0 10 10",
+                                refX="5", refY="5",
+                                markerWidth="6", markerHeight="6",
+                                orient="auto")
+        marker.add(drawing.path(d=path))
+        drawing.defs.add(marker)
+
+def marker_id(marker_def, end):
+#==============================
+    marker_type = marker_def.get('type')
+    return ('#{}-{}'.format(marker_type, end)
+            if marker_type is not None
+            else None)
+
+#===============================================================================
+
 # Helpers for encoding names for Adobe Illustrator
 
 def match_to_hex(m):
@@ -212,6 +241,7 @@ class SvgLayer(object):
         self.__colour_map = ColourMap(ppt_theme, slide)
         self.__dwg = svgwrite.Drawing(filename=None, size=size)
         self.__dwg.defs.add(self.__dwg.style('.non-scaling-stroke { vector-effect: non-scaling-stroke; }'))
+## WIP  add_marker_definitions(self.__dwg)
 
     def save(self, filename):
     #========================
@@ -360,6 +390,11 @@ class SvgLayer(object):
                     svg_path.attribs['stroke-dasharray'] = '{} {}'.format(2*stroke_width, stroke_width)
                 elif shape.line.dash_style != MSO_LINE_DASH_STYLE.SOLID:
                     print('Unsupported line dash style: {}'.format(shape.line.dash_style))
+
+## WIP      if 'type' in shape.line.headEnd or 'type' in shape.line.tailEnd:
+## WIP          svg_path.set_markers((marker_id(shape.line.headEnd, 'head'),
+## WIP                                None,
+## WIP                                marker_id(shape.line.tailEnd, 'tail')))
 
             svg_parent.add(svg_path)
 
