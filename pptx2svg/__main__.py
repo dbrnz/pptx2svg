@@ -245,7 +245,6 @@ class SvgLayer(object):
         self.__slide = slide
         self.__colour_map = ColourMap(ppt_theme, slide)
         self.__dwg = svgwrite.Drawing(filename=None, size=size)
-        self.__dwg.defs.add(self.__dwg.style('.non-scaling-stroke { vector-effect: non-scaling-stroke; }'))
 ## WIP  add_marker_definitions(self.__dwg)
 
     def save(self, filename):
