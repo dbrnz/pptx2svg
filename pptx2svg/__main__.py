@@ -115,6 +115,30 @@ def marker_id(marker_def, end):
 
 #===============================================================================
 
+# Don't set a path id for default shape names
+
+EXCLUDED_NAME_PREFIXES = [
+    'Freeform',
+    'Oval',
+]
+
+# Markup that has been deprecated
+
+EXCLUDED_NAME_MARKUP = [
+    '.siblings',
+]
+
+# Check to see if we have a valid name and encode it as an id
+
+def id_from_name(name):
+#======================
+    if name not in EXCLUDED_NAME_MARKUP:
+        for prefix in EXCLUDED_NAME_PREFIXES:
+            if name.startswith(prefix):
+                return None
+        return adobe_encode(name)
+    return None
+
 # Helpers for encoding names for Adobe Illustrator
 
 def match_to_hex(m):
@@ -286,7 +310,7 @@ class SvgLayer(object):
 
     def process_shape(self, shape, svg_parent, transform):
     #=====================================================
-        id = (adobe_encode(shape.name) if shape.name != '.siblings' else None)
+        id = id_from_name(shape.name)
         geometry = Geometry(shape)
         if id is not None and len(geometry) > 1:
             # Add a group to hold multiple paths
