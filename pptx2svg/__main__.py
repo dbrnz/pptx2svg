@@ -53,18 +53,24 @@ from presets import DML, ThemeDefinition
 EMU_PER_CM  = 360000
 EMU_PER_IN  = 914400
 
-DOTS_PER_IN = 72
+POINTS_PER_IN = 72
 
-EMU_PER_DOT = EMU_PER_IN/DOTS_PER_IN
+# SVG pixel resolution
+PIXELS_PER_IN = 96
+EMU_PER_PIXEL = EMU_PER_IN/PIXELS_PER_IN
 
 # Minimum width for a stroked path in points
 MIN_STROKE_WIDTH = 0.5
 
 #===============================================================================
 
-def svg_units(emu):
-#===================
-    return emu/EMU_PER_DOT
+def emu_to_pixels(emu):
+#======================
+    return emu/EMU_PER_PIXEL
+
+def points_to_pixels(pts):
+#=========================
+    return pts*PIXELS_PER_IN/POINTS_PER_IN
 
 def transform_point(transform, point):
 #=====================================
@@ -312,7 +318,7 @@ class SvgLayer(object):
                     pt = (current_point[0] - p1[0] + p2[0],
                           current_point[1] - p1[1] + p2[1])
                     large_arc_flag = 1 if swAng >= PI else 0
-                    svg_path.push('A', svg_units(wR), svg_units(hR),
+                    svg_path.push('A', emu_to_pixels(wR), emu_to_pixels(hR),
                                        0, large_arc_flag, 1,
                                        *transform_point(T, pt))
                     current_point = pt
@@ -376,7 +382,7 @@ class SvgLayer(object):
             elif shape.line.fill.type != MSO_FILL_TYPE.BACKGROUND:
                 print('Unsupported line fill type: {}'.format(shape.line.fill.type))
 
-            stroke_width = max(Length(shape.line.width).pt, MIN_STROKE_WIDTH)
+            stroke_width = points_to_pixels(max(Length(shape.line.width).pt, MIN_STROKE_WIDTH))
             svg_path.attribs['stroke-width'] = stroke_width
             if shape.line.dash_style is not None:
                 if shape.line.dash_style == MSO_LINE_DASH_STYLE.DASH:
@@ -404,10 +410,10 @@ class SvgExtractor(object):
         self.__pptx = Presentation(pptx)
         self.__theme = Theme(pptx)
         self.__slides = self.__pptx.slides
-        self.__transform = np.array([[1.0/EMU_PER_DOT,               0, 0],
-                                     [              0, 1.0/EMU_PER_DOT, 0],
-                                     [              0,               0, 1]])
         (pptx_width, pptx_height) = (self.__pptx.slide_width, self.__pptx.slide_height)
+        self.__transform = np.array([[1.0/EMU_PER_PIXEL,                 0, 0],
+                                     [                0, 1.0/EMU_PER_PIXEL, 0],
+                                     [                0,                 0, 1]])
         self.__svg_size = transform_point(self.__transform, (pptx_width, pptx_height))
         self.__output_dir = output_dir
         self.__debug = debug
