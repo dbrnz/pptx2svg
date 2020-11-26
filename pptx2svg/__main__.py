@@ -267,7 +267,7 @@ class DrawMLTransform(object):
 #===============================================================================
 
 class SvgLayer(object):
-    def __init__(self, size, slide, slide_number, ppt_theme):
+    def __init__(self, size, slide, slide_number, ppt_theme, quiet=False):
         self.__slide = slide
         self.__colour_map = ColourMap(ppt_theme, slide)
         self.__dwg = svgwrite.Drawing(filename=None, size=size)
@@ -283,6 +283,7 @@ class SvgLayer(object):
                         self.__id = id_match[1].strip()
                         break
         self.__filename = None
+        self.__quiet =  quiet
 
     @property
     def filename(self):
@@ -309,7 +310,7 @@ class SvgLayer(object):
 
     def process_shape_list(self, shapes, svg_parent, transform, outermost=False):
     #============================================================================
-        if outermost:
+        if outermost and not self.__quiet:
             print('Processing shape list...')
             progress_bar = tqdm(total=len(shapes),
                 unit='shp', ncols=40,
@@ -326,9 +327,9 @@ class SvgLayer(object):
                 pass
             else:
                 print('"{}" {} not processed...'.format(shape.name, str(shape.shape_type)))
-            if outermost:
+            if outermost and not self.__quiet:
                 progress_bar.update(1)
-        if outermost:
+        if outermost and not self.__quiet:
             progress_bar.close()
 
     def process_shape(self, shape, svg_parent, transform):
@@ -451,18 +452,19 @@ class SvgLayer(object):
 #===============================================================================
 
 class SvgExtractor(object):
-    def __init__(self, pptx, output_dir, debug=False):
-        self.__pptx = Presentation(pptx)
-        self.__theme = Theme(pptx)
+    def __init__(self, options):
+        self.__pptx = Presentation(options.powerpoint)
+        self.__theme = Theme(options.powerpoint)
         self.__slides = self.__pptx.slides
         (pptx_width, pptx_height) = (self.__pptx.slide_width, self.__pptx.slide_height)
         self.__transform = np.array([[1.0/EMU_PER_PIXEL,                 0, 0],
                                      [                0, 1.0/EMU_PER_PIXEL, 0],
                                      [                0,                 0, 1]])
         self.__svg_size = transform_point(self.__transform, (pptx_width, pptx_height))
-        self.__output_dir = output_dir
+        self.__output_dir = options.output_dir
+        self.__debug = options.debug
+        self.__quiet = options.quiet
         self.__saved_svg = OrderedDict()
-        self.__debug = debug
         self.__id = None
 
     @property
@@ -478,7 +480,7 @@ class SvgExtractor(object):
         if self.__debug:
             with open(os.path.join(self.__output_dir, 'slide-{:02d}.xml'.format(slide_number)), 'w') as xml:
                 xml.write(slide.element.xml)
-        layer = SvgLayer(self.__svg_size, slide, slide_number, self.__theme)
+        layer = SvgLayer(self.__svg_size, slide, slide_number, self.__theme, self.__quiet)
         layer.process(self.__transform)
         layer.save(self.__output_dir)
         self.__saved_svg[layer.id] = layer.filename
@@ -520,6 +522,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Convert Powerpoint slides to SVG.')
 
     parser.add_argument('-d', '--debug', action='store_true', help='save DrawML to aid with debugging')
+    parser.add_argument('-q', '--quiet', action='store_true', help='do not show progress bar')
 
     parser.add_argument('powerpoint', metavar='POWERPOINT_FILE',
                         help='the Powerpoint file to convert')
@@ -532,7 +535,7 @@ if __name__ == '__main__':
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
 
-    extractor = SvgExtractor(args.powerpoint, args.output_dir, args.debug)
+    extractor = SvgExtractor(args)
     extractor.slides_to_svg()
 
     manifest = os.path.join(args.output_dir, 'manifest.json')
