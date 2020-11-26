@@ -19,6 +19,7 @@
 #===============================================================================
 
 import colorsys
+import json
 import os
 import re
 import string
@@ -462,6 +463,11 @@ class SvgExtractor(object):
         self.__output_dir = output_dir
         self.__saved_svg = OrderedDict()
         self.__debug = debug
+        self.__id = None
+
+    @property
+    def id(self):
+        return self.__id
 
     @property
     def saved_svg(self):
@@ -476,11 +482,35 @@ class SvgExtractor(object):
         layer.process(self.__transform)
         layer.save(self.__output_dir)
         self.__saved_svg[layer.id] = layer.filename
+        if slide_number == 1 and not layer.id.startswith('slide-'):
+            self.__id = layer.id
 
     def slides_to_svg(self):
     #=======================
         for n, slide in enumerate(self.__slides):
             self.slide_to_svg(slide, n+1)
+
+    def manifest(self):
+    #==================
+        manifest = OrderedDict()
+        if self.__id is not None:
+            manifest['id'] = self.__id
+        manifest['sources'] = []
+        source_kind = 'base'
+        for id, filename in self.__saved_svg.items():
+            manifest['sources'].append(OrderedDict(
+                id=id,
+                href=filename,
+                kind=source_kind
+            ))
+            if source_kind == 'base':
+                source_kind = 'details'
+        return manifest
+
+    def save_manifest(self, filename):
+    #=================================
+        with open(filename, 'w') as output:
+            output.write(json.dumps(extractor.manifest(), indent=4))
 
 #===============================================================================
 
@@ -505,7 +535,9 @@ if __name__ == '__main__':
     extractor = SvgExtractor(args.powerpoint, args.output_dir, args.debug)
     extractor.slides_to_svg()
 
-    print(extractor.saved_svg)    ## Save in specification file
+    manifest = os.path.join(args.output_dir, 'manifest.json')
+    extractor.save_manifest(manifest)
+    print('Manifest saved as `{}`'.format(manifest))
 
 #===============================================================================
 
