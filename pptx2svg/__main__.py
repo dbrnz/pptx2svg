@@ -264,15 +264,35 @@ class DrawMLTransform(object):
 #===============================================================================
 
 class SvgLayer(object):
-    def __init__(self, size, slide, ppt_theme):
+    def __init__(self, size, slide, slide_number, ppt_theme):
         self.__slide = slide
         self.__colour_map = ColourMap(ppt_theme, slide)
         self.__dwg = svgwrite.Drawing(filename=None, size=size)
 ## WIP  add_marker_definitions(self.__dwg)
+        self.__id = 'slide-{:02d}'.format(slide_number)
+        if slide.has_notes_slide:
+            notes_slide = slide.notes_slide
+            notes_text = notes_slide.notes_text_frame.text
+            if notes_text.startswith('.'):
+                for part in notes_text[1:].split():
+                    id_match = re.match('id *\((.*)\)', part)
+                    if id_match is not None:
+                        self.__id = id_match[1].strip()
+                        break
+        self.__filename = None
 
-    def save(self, filename):
-    #========================
-        self.__dwg.saveas(filename, pretty=True, indent=4)
+    @property
+    def filename(self):
+        return self.__filename
+
+    @property
+    def id(self):
+        return self.__id
+
+    def save(self, output_dir):
+    #==========================
+        self.__filename = os.path.join(output_dir, '{}.svg'.format(self.__id))
+        self.__dwg.saveas(self.__filename, pretty=True, indent=4)
 
     def process(self, transform):
     #============================
@@ -445,9 +465,9 @@ class SvgExtractor(object):
         if self.__debug:
             with open(os.path.join(self.__output_dir, 'slide-{:02d}.xml'.format(slide_number)), 'w') as xml:
                 xml.write(slide.element.xml)
-        layer = SvgLayer(self.__svg_size, slide, self.__theme)
+        layer = SvgLayer(self.__svg_size, slide, slide_number, self.__theme)
         layer.process(self.__transform)
-        layer.save(os.path.join(self.__output_dir, 'slide-{:02d}.svg'.format(slide_number)))
+        layer.save(self.__output_dir)
 
     def slides_to_svg(self):
     #=======================
