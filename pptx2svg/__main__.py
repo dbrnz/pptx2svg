@@ -23,6 +23,7 @@ import os
 import re
 import string
 
+from collections import OrderedDict
 from math import sqrt, sin, cos, pi as PI
 from zipfile import ZipFile
 
@@ -459,7 +460,12 @@ class SvgExtractor(object):
                                      [                0,                 0, 1]])
         self.__svg_size = transform_point(self.__transform, (pptx_width, pptx_height))
         self.__output_dir = output_dir
+        self.__saved_svg = OrderedDict()
         self.__debug = debug
+
+    @property
+    def saved_svg(self):
+        return self.__saved_svg
 
     def slide_to_svg(self, slide, slide_number):
     #===========================================
@@ -469,6 +475,7 @@ class SvgExtractor(object):
         layer = SvgLayer(self.__svg_size, slide, slide_number, self.__theme)
         layer.process(self.__transform)
         layer.save(self.__output_dir)
+        self.__saved_svg[layer.id] = layer.filename
 
     def slides_to_svg(self):
     #=======================
@@ -497,6 +504,8 @@ if __name__ == '__main__':
 
     extractor = SvgExtractor(args.powerpoint, args.output_dir, args.debug)
     extractor.slides_to_svg()
+
+    print(extractor.saved_svg)    ## Save in specification file
 
 #===============================================================================
 
