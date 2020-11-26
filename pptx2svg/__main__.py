@@ -119,6 +119,7 @@ def marker_id(marker_def, end):
 
 EXCLUDED_NAME_PREFIXES = [
     'Freeform',
+    'Group',
     'Oval',
 ]
 
@@ -300,7 +301,7 @@ class SvgLayer(object):
 
     def process_group(self, group, svg_parent, transform):
     #=====================================================
-        svg_group = self.__dwg.g(id=adobe_encode(group.name))
+        svg_group = self.__dwg.g(id=id_from_name(group.name))
         svg_parent.add(svg_group)
         self.process_shape_list(group.shapes, svg_group, transform@DrawMLTransform(group).matrix())
 
