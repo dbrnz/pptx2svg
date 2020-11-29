@@ -309,7 +309,7 @@ class SvgLayer(object):
 
     def process(self, transform):
     #============================
-        self.process_shape_list(self.__slide.shapes, self.__dwg, transform, True)
+        self.process_shape_list(self.__slide.shapes, self.__dwg, transform,  not self.__quiet)
 
     def process_group(self, group, svg_parent, transform):
     #=====================================================
@@ -317,9 +317,9 @@ class SvgLayer(object):
         svg_parent.add(svg_group)
         self.process_shape_list(group.shapes, svg_group, transform@DrawMLTransform(group).matrix())
 
-    def process_shape_list(self, shapes, svg_parent, transform, outermost=False):
-    #============================================================================
-        if outermost and not self.__quiet:
+    def process_shape_list(self, shapes, svg_parent, transform, show_progress=False):
+    #================================================================================
+        if show_progress:
             print('Processing shape list...')
             progress_bar = tqdm(total=len(shapes),
                 unit='shp', ncols=40,
@@ -336,9 +336,9 @@ class SvgLayer(object):
                 pass
             else:
                 print('"{}" {} not processed...'.format(shape.name, str(shape.shape_type)))
-            if outermost and not self.__quiet:
+            if show_progress:
                 progress_bar.update(1)
-        if outermost and not self.__quiet:
+        if show_progress:
             progress_bar.close()
 
     def process_shape(self, shape, svg_parent, transform):
