@@ -287,7 +287,7 @@ class SvgLayer(object):
                         self.__models = models_match[1].strip()
         if self.__id is None:
             self.__id = 'slide-{:02d}'.format(slide_number)
-        self.__filename = None
+        self.__filename = '{}.svg'.format(self.__id)
         self.__quiet =  quiet
 
     @property
@@ -304,8 +304,7 @@ class SvgLayer(object):
 
     def save(self, output_dir):
     #==========================
-        self.__filename = os.path.join(output_dir, '{}.svg'.format(self.__id))
-        with open(self.__filename, 'w', encoding='utf-8') as f:
+        with open(os.path.join(output_dir, self.__filename), 'w', encoding='utf-8') as f:
             self.__dwg.write(f, pretty=True, indent=4)
 
     def process(self, transform):
