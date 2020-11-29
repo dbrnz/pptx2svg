@@ -272,7 +272,8 @@ class SvgLayer(object):
         self.__colour_map = ColourMap(ppt_theme, slide)
         self.__dwg = svgwrite.Drawing(filename=None, size=size)
 ## WIP  add_marker_definitions(self.__dwg)
-        self.__id = 'slide-{:02d}'.format(slide_number)
+        self.__id = None
+        self.__models = None
         if slide.has_notes_slide:
             notes_slide = slide.notes_slide
             notes_text = notes_slide.notes_text_frame.text
@@ -281,7 +282,11 @@ class SvgLayer(object):
                     id_match = re.match('id *\((.*)\)', part)
                     if id_match is not None:
                         self.__id = id_match[1].strip()
-                        break
+                    models_match = re.match('models *\((.*)\)', part)
+                    if models_match is not None:
+                        self.__models = models_match[1].strip()
+        if self.__id is None:
+            self.__id = 'slide-{:02d}'.format(slide_number)
         self.__filename = None
         self.__quiet =  quiet
 
@@ -292,6 +297,10 @@ class SvgLayer(object):
     @property
     def id(self):
         return self.__id
+
+    @property
+    def models(self):
+        return self.__models
 
     def save(self, output_dir):
     #==========================
@@ -466,6 +475,7 @@ class SvgExtractor(object):
         self.__quiet = options.quiet
         self.__saved_svg = OrderedDict()
         self.__id = None
+        self.__models = None
 
     @property
     def id(self):
@@ -484,8 +494,10 @@ class SvgExtractor(object):
         layer.process(self.__transform)
         layer.save(self.__output_dir)
         self.__saved_svg[layer.id] = layer.filename
-        if slide_number == 1 and not layer.id.startswith('slide-'):
-            self.__id = layer.id
+        if slide_number == 1:
+            if not layer.id.startswith('slide-'):
+                self.__id = layer.id
+            self.__models = layer.models
 
     def slides_to_svg(self):
     #=======================
@@ -497,6 +509,8 @@ class SvgExtractor(object):
         manifest = OrderedDict()
         if self.__id is not None:
             manifest['id'] = self.__id
+        if self.__models is not None:
+            manifest['models'] = self.__models
         manifest['sources'] = []
         source_kind = 'base'
         for id, filename in self.__saved_svg.items():
