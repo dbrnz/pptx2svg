@@ -305,7 +305,8 @@ class SvgLayer(object):
     def save(self, output_dir):
     #==========================
         self.__filename = os.path.join(output_dir, '{}.svg'.format(self.__id))
-        self.__dwg.saveas(self.__filename, pretty=True, indent=4)
+        with open(self.__filename, 'w', encoding='utf-8') as f:
+            self.__dwg.write(f, pretty=True, indent=4)
 
     def process(self, transform):
     #============================
