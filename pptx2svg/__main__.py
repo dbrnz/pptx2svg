@@ -359,7 +359,6 @@ class SvgLayer(object):
                 svg_path.attribs['id'] = id
             bbox = (shape.width, shape.height) if path.w is None else (path.w, path.h)
             T = transform@DrawMLTransform(shape, bbox).matrix()
-            first_point = None
             current_point = None
             closed = False
             for c in path.getchildren():
@@ -377,12 +376,9 @@ class SvgLayer(object):
                                        0, large_arc_flag, 1,
                                        *transform_point(T, pt))
                     current_point = pt
-
                 elif c.tag == DML('close'):
-                    if first_point is not None and current_point != first_point:
-                        svg_path.push('Z')
+                    svg_path.push('Z')
                     closed = True
-                    first_point = None
                 elif c.tag == DML('cubicBezTo'):
                     coords = []
                     for p in c.getchildren():
@@ -399,8 +395,6 @@ class SvgLayer(object):
                     pt = geometry.point(c.pt)
                     coords = transform_point(T, pt)
                     svg_path.push('M', *coords)
-                    if first_point is None:
-                        first_point = pt
                     current_point = pt
                 elif c.tag == DML('quadBezTo'):
                     coords = []
