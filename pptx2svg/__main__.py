@@ -419,6 +419,7 @@ class SvgLayer(object):
                     svg_path.attribs['opacity'] = 0.3      ## TEMP
                 elif shape.fill.type is None:
                     svg_path.attribs['fill'] = '#000000'
+                    svg_path.attribs['opacity'] = 0
                 elif shape.fill.type != MSO_FILL_TYPE.BACKGROUND:
                     print('Unsupported fill type: {}'.format(shape.fill.type))
 
