@@ -26,6 +26,7 @@ import string
 
 from collections import OrderedDict
 from math import sqrt, sin, cos, pi as PI
+from urllib.parse import urljoin
 from zipfile import ZipFile
 
 #===============================================================================
@@ -498,57 +499,76 @@ class SvgExtractor(object):
         for n, slide in enumerate(self.__slides):
             self.slide_to_svg(slide, n+1)
 
-    def manifest(self):
-    #==================
-        manifest = OrderedDict()
-        if self.__id is not None:
+    def update_manifest(self, manifest):
+    #===================================
+        if 'id' not in manifest and self.__id is not None:
             manifest['id'] = self.__id
-        if self.__models is not None:
+        if 'models' not in manifest and self.__models is not None:
             manifest['models'] = self.__models
-        manifest['sources'] = []
-        source_kind = 'base'
+        sources = [ source for source in manifest['sources']
+                        if source['kind'] != 'slides']
+        next_kind = 'base'
         for id, filename in self.__saved_svg.items():
-            manifest['sources'].append(OrderedDict(
+            sources.append(OrderedDict(
                 id=id,
                 href=filename,
-                kind=source_kind
+                kind=next_kind
             ))
-            if source_kind == 'base':
-                source_kind = 'details'
-        return manifest
-
-    def save_manifest(self, filename):
-    #=================================
-        with open(filename, 'w') as output:
-            output.write(json.dumps(extractor.manifest(), indent=4))
+            if next_kind == 'base':
+                next_kind = 'details'
+        manifest['sources'] = sources
 
 #===============================================================================
 
 if __name__ == '__main__':
     import argparse
+    import pathlib
+    import sys
 
     parser = argparse.ArgumentParser(description='Convert Powerpoint slides to SVG.')
 
     parser.add_argument('-d', '--debug', action='store_true', help='save DrawML to aid with debugging')
     parser.add_argument('-q', '--quiet', action='store_true', help='do not show progress bar')
 
-    parser.add_argument('powerpoint', metavar='POWERPOINT_FILE',
+    parser.add_argument('--powerpoint', metavar='POWERPOINT_FILE',
                         help='the Powerpoint file to convert')
-
-    parser.add_argument('output_dir', metavar='OUTPUT_DIRECTORY',
-                        help='directory in which to save SVG files')
+    parser.add_argument('--map', dest='map_dir', metavar='MAP_DIR',
+                        help='directory containing a flatmap manifest specifying sources')
 
     args = parser.parse_args()
 
-    if not os.path.exists(args.output_dir):
-        os.makedirs(args.output_dir)
+    if args.powerpoint is None and args.map_dir is None:
+        sys.exit('A map directory or Powerpoint file must be specified')
+    elif args.powerpoint is not None and args.map_dir is not None:
+        sys.exit('Cannot specify both a map directory and a Powerpoint file')
+
+    if args.map_dir:
+        manifest_file = os.path.join(args.map_dir, 'manifest.json')
+        with open(manifest_file, 'rb') as fp:
+            manifest = json.loads(fp.read())
+        for source in manifest['sources']:
+            if source['kind'] == 'slides':
+                manifest_path = pathlib.Path(manifest_file).absolute().as_posix()
+                args.powerpoint = urljoin(manifest_path, source['href'])
+                break
+        if args.powerpoint is None:
+            sys.exit('No Powerpoint file specified in manifest')
+        args.output_dir = args.map_dir
+    else:
+        manifest = { 'sources': [] }
+        args.output_dir = Path(args.powerpoint).parent.as_posix()
 
     extractor = SvgExtractor(args)
     extractor.slides_to_svg()
 
-    manifest = os.path.join(args.output_dir, 'manifest.json')
-    extractor.save_manifest(manifest)
-    print('Manifest saved as `{}`'.format(manifest))
+    # Update an existing manifest
+    extractor.update_manifest(manifest)
+    manifest_temp_file = os.path.join(args.output_dir, 'manifest.temp')
+    with open(manifest_temp_file, 'w') as output:
+        output.write(json.dumps(manifest, indent=4))
+    manifest_file = os.path.join(args.output_dir, 'manifest.json')
+    os.rename(manifest_temp_file, manifest_file)
+    print('Manifest saved as `{}`'.format(manifest_file))
 
 #===============================================================================
 
