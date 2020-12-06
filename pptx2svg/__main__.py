@@ -461,8 +461,8 @@ class SvgLayer(object):
                     gradient = Gradient(self.__dwg, self.__gradient_id, shape, self.__colour_map)
                     svg_path.attribs['fill'] = gradient.url
                 elif shape.fill.type is None:
-                    svg_path.attribs['fill'] = '#FFFFFF'
-                    svg_path.attribs['opacity'] = 0
+                    svg_path.attribs['fill'] = '#FF0000'
+                    svg_path.attribs['opacity'] = 1.0
                 elif shape.fill.type != MSO_FILL_TYPE.BACKGROUND:
                     print('Unsupported fill type: {}'.format(shape.fill.type))
 
