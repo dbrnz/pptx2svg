@@ -463,6 +463,9 @@ class SvgLayer(object):
                 elif shape.fill.type is None:
                     svg_path.attribs['fill'] = '#FF0000'
                     svg_path.attribs['opacity'] = 1.0
+                elif shape.fill.type == MSO_FILL_TYPE.GROUP:
+                    # WIP Needs to get group's fill
+                    print('Group fill ignored for ', shape.name)
                 elif shape.fill.type != MSO_FILL_TYPE.BACKGROUND:
                     print('Unsupported fill type: {}'.format(shape.fill.type))
 
