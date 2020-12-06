@@ -26,6 +26,7 @@ import string
 
 from collections import OrderedDict
 from math import sqrt, sin, cos, pi as PI
+from pathlib import Path
 from urllib.parse import urljoin
 from zipfile import ZipFile
 
@@ -470,7 +471,7 @@ class SvgExtractor(object):
         self.__debug = options.debug
         self.__quiet = options.quiet
         self.__saved_svg = OrderedDict()
-        self.__id = None
+        self.__id = Path(options.powerpoint).name.split('.')[0].replace(' ', '_')
         self.__models = None
 
     @property
