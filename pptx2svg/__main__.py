@@ -214,15 +214,49 @@ class Gradient(object):
         self.__id = 'gradient-{}'.format(id)
         fill = shape.fill
         gradient = None
-
         if fill._fill._gradFill.path is None:
             gradient = svgwrite.gradients.LinearGradient(id=self.__id)
-            if fill.gradient_angle != 0:
-                gradient.rotate(fill.gradient_angle, (0.5, 0.5))
+            rotation = fill.gradient_angle
+            if ('rotWithShape' in fill._fill._gradFill.attrib
+             and fill._fill._gradFill.attrib['rotWithShape'] == '1'):
+                rotation += shape.rotation
+            if rotation != 0:
+                gradient.rotate(rotation % 360, (0.5, 0.5))
+
+        elif fill._fill._gradFill.path.attrib['path'] == 'circle':
+                fill_to = fill._fill._gradFill.path.find('{http://schemas.openxmlformats.org/drawingml/2006/main}fillToRect').attrib
+                tileRect = fill._fill._gradFill.find('{http://schemas.openxmlformats.org/drawingml/2006/main}tileRect')
+                tile = tileRect.attrib if tileRect is not None else {}
+                cx = (float(fill_to['l']) if 'l' in fill_to else float(fill_to['r']) + float(tile.get('l', 0.0)))/100000.0
+                cy = (float(fill_to['t']) if 't' in fill_to else float(fill_to['b']) + float(tile.get('t', 0.0)))/100000.0
+                sx = (float(fill_to['r']) if 'r' in fill_to else float(fill_to['l']) + float(tile.get('r', 0.0)))/100000.0
+                sy = (float(fill_to['b']) if 'b' in fill_to else float(fill_to['t']) + float(tile.get('b', 0.0)))/100000.0
+                if shape.width > shape.height:
+                    scale_x = shape.height/shape.width
+                    scale_y = 1.0
+                elif shape.width < shape.height:
+                    scale_x = 1.0
+                    scale_y = shape.width/shape.height
+                else:
+                    scale_x = 1.0
+                    scale_y = 1.0
+                if len(tile) == 0:
+                    radius = 1.0
+                    if (cx, cy) != (0.5, 0.5) and (sx, sy) != (0.5, 0.5):
+                        print('Preset radial gradient for shape:', shape.name)
+                else:
+                    radius = sqrt(((cx-sx)/scale_x)**2 + ((cy-sy)/scale_y)**2)
+                gradient = svgwrite.gradients.RadialGradient((cx/scale_x, cy/scale_y), radius, id=self.__id)
+                if shape.rotation != 0:
+                    gradient.rotate(shape.rotation, (0.5, 0.5))
+                if shape.width != shape.height:
+                    gradient.scale(scale_x, scale_y)
+
+        elif fill._fill._gradFill.path.attrib['path'] == 'rect':
+            print('Rect fill ignored for', shape.name)
+            return
 
         if gradient is not None:
-            if fill._fill._gradFill.attrib.get('rotWithShape', '0') == '1' and shape.rotation != 0:
-                gradient.rotate(shape.rotation, (0.5, 0.5))
             for stop in sorted(fill.gradient_stops, key=lambda stop: stop.position):
                 gradient.add_stop_color(offset=stop.position,
                     color=colour_map.lookup(stop.color),
