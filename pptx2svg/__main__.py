@@ -210,23 +210,30 @@ class ColourMap(object):
 #===============================================================================
 
 class Gradient(object):
-    def __init__(self, id, fill, colour_map):
-        self.__id = id
-        self.__kind = 'Linear'
-        self.__angle = fill.gradient_angle
-        self.__stops = [(stop.position, colour_map.lookup(stop.color))
-                            for stop in fill.gradient_stops]
+    def __init__(self, dwg, id, shape, colour_map):
+        self.__id = 'gradient-{}'.format(id)
+        fill = shape.fill
+        gradient = None
+
+        if fill._fill._gradFill.path is None:
+            gradient = svgwrite.gradients.LinearGradient(id=self.__id)
+            if fill.gradient_angle != 0:
+                gradient.rotate(fill.gradient_angle, (0.5, 0.5))
+
+        if gradient is not None:
+            if fill._fill._gradFill.attrib.get('rotWithShape', '0') == '1' and shape.rotation != 0:
+                gradient.rotate(shape.rotation, (0.5, 0.5))
+            for stop in sorted(fill.gradient_stops, key=lambda stop: stop.position):
+                gradient.add_stop_color(offset=stop.position,
+                    color=colour_map.lookup(stop.color),
+                    opacity=stop.color.alpha)
+            dwg.defs.add(gradient)
+        else:
+            print('UNKNOWN FILL: {}\n'.format(shape.name), fill._fill._element.xml)
 
     @property
-    def id(self):
-        return self.__id
-
-    def svg_definition(self):
-    #========================
-        stops = ['<stop offset="{}%" stop-color="{}"/>'.format(100*stop[0], stop[1])
-                    for stop in self.__stops]
-        return ('<{gradient}Gradient id="{id}">{stops}</{gradient}Gradient>'
-                .format(gradient=self.__kind, id=self.__id, stops='/n'.join(stops)))
+    def url(self):
+        return 'url(#{})'.format(self.__id)
 
 ## WIP  Want list of unique gradient definitions
 
@@ -290,6 +297,7 @@ class SvgLayer(object):
         if self.__id is None:
             self.__id = 'slide-{:02d}'.format(slide_number)
         self.__filename = '{}.svg'.format(self.__id)
+        self.__gradient_id = 0
         self.__quiet =  quiet
 
     @property
@@ -415,9 +423,9 @@ class SvgLayer(object):
                     if alpha < 1.0:
                         svg_path.attribs['opacity'] = alpha
                 elif shape.fill.type == MSO_FILL_TYPE.GRADIENT:
-## WIP              gradient = Gradient('id', shape.fill, self.__colour_map)
-                    svg_path.attribs['fill'] = '#CCCCCC'   ## TEMP
-                    svg_path.attribs['opacity'] = 0.3      ## TEMP
+                    self.__gradient_id += 1
+                    gradient = Gradient(self.__dwg, self.__gradient_id, shape, self.__colour_map)
+                    svg_path.attribs['fill'] = gradient.url
                 elif shape.fill.type is None:
                     svg_path.attribs['fill'] = '#FFFFFF'
                     svg_path.attribs['opacity'] = 0
