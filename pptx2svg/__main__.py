@@ -450,7 +450,7 @@ class SvgLayer(object):
                 else:
                     print('Unknown path element: {}'.format(c.tag))
 
-            if closed:
+            if not isinstance(shape, pptx.shapes.connector.Connector):
                 if shape.fill.type == MSO_FILL_TYPE.SOLID:
                     svg_path.attribs['fill'] = self.__colour_map.lookup(shape.fill.fore_color)
                     alpha = shape.fill.fore_color.alpha
