@@ -163,31 +163,31 @@ ColorFormat.alpha = property(lambda self: (self._color._xClr.alpha.val
 
 ColorFormat.lumMod = property(lambda self: (self._color._xClr.lumMod.val
                                   if self._color._xClr.lumMod is not None
-                                  else None))
+                                  else 1.0))
 ColorFormat.lumOff = property(lambda self: (self._color._xClr.lumOff.val
                                   if self._color._xClr.lumOff is not None
-                                  else None))
+                                  else 0.0))
 
 oxml.register_element_cls("a:satMod", CT_Percentage)
 _BaseColorElement.satMod = ZeroOrOne("a:satMod")
 _BaseColorElement.satMod.populate_class_members(_BaseColorElement, "satMod")
 ColorFormat.satMod = property(lambda self: (self._color._xClr.satMod.val
                                   if self._color._xClr.satMod is not None
-                                  else None))
+                                  else 1.0))
 
 oxml.register_element_cls("a:shade", CT_Percentage)
 _BaseColorElement.shade = ZeroOrOne("a:shade")
 _BaseColorElement.shade.populate_class_members(_BaseColorElement, "shade")
 ColorFormat.shade = property(lambda self: (self._color._xClr.shade.val
                                   if self._color._xClr.shade is not None
-                                  else None))
+                                  else 1.0))
 
 oxml.register_element_cls("a:tint", CT_Percentage)
 _BaseColorElement.tint = ZeroOrOne("a:tint")
 _BaseColorElement.tint.populate_class_members(_BaseColorElement, "tint")
 ColorFormat.tint = property(lambda self: (self._color._xClr.tint.val
                                   if self._color._xClr.tint is not None
-                                  else None))
+                                  else 0.0))
 
 #===============================================================================
 

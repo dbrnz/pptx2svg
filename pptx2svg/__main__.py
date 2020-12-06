@@ -197,14 +197,29 @@ class ColourMap(object):
             rgb = self.__colour_defs[DML(key)]
         else:
             raise ValueError('Unsupported colour format: {}'.format(colour_format.type))
-        brightness = colour_format.brightness
-        if brightness != 0.0:
-            hsv = list(colorsys.rgb_to_hsv(*(np.array(rgb)/255.0)))
-            hsv[2] *= (brightness + 1.0)
-            if hsv[2] > 1.0:
-                hsv[2] = 1.0
-            colour = np.uint8(255*np.array(colorsys.hsv_to_rgb(*hsv)) + 0.5)
+        lumMod = colour_format.lumMod
+        lumOff = colour_format.lumOff
+        satMod = colour_format.satMod
+        if lumMod != 1.0 or lumOff != 0.0 or satMod != 1.0:
+            hls = list(colorsys.rgb_to_hls(*(np.array(rgb)/255.0)))
+            hls[1] *= lumMod
+            hls[1] += lumOff
+            if hls[1] > 1.0:
+                hls[1] = 1.0
+            hls[2] *= satMod
+            if hls[2] > 1.0:
+                hls[2] = 1.0
+            colour = np.uint8(255*np.array(colorsys.hls_to_rgb(*hls)) + 0.5)
             rgb = RGBColor(*colour.tolist())
+        tint = colour_format.tint
+        if tint > 0.0:
+            colour = np.array(rgb)
+            tinted = np.uint8((colour + tint*(255 - colour)))
+            rgb = RGBColor(*colour.tolist())
+        shade = colour_format.shade
+        if shade != 1.0:
+            shaded = np.uint8(shade*np.array(rgb))
+            rgb = RGBColor(*shaded.tolist())
         return '#{}'.format(str(rgb))
 
 #===============================================================================
