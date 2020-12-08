@@ -10,6 +10,7 @@ svgwrite = "*"
 numpy = "*"
 tqdm = "*"
 python-pptx = "*"
+transforms3d = "*"
 
 [requires]
 python_version = "3.8"
