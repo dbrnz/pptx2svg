@@ -25,7 +25,7 @@ import re
 import string
 
 from collections import OrderedDict
-from math import sqrt, sin, cos, pi as PI
+from math import sqrt, sin, cos, acos, pi as PI
 from pathlib import Path
 from urllib.parse import urljoin
 from zipfile import ZipFile
@@ -35,6 +35,7 @@ from zipfile import ZipFile
 import numpy as np
 import svgwrite
 from tqdm import tqdm
+import transforms3d
 
 #===============================================================================
 
@@ -75,10 +76,6 @@ def emu_to_pixels(emu):
 def points_to_pixels(pts):
 #=========================
     return pts*PIXELS_PER_IN/POINTS_PER_IN
-
-def transform_point(transform, point):
-#=====================================
-    return (transform@[point[0], point[1], 1.0])[:2]
 
 #===============================================================================
 
@@ -324,6 +321,38 @@ class DrawMLTransform(object):
 
 #===============================================================================
 
+class Transform(object):
+    def __init__(self, matrix):
+        self.__matrix = np.array(matrix)
+
+    def __matmul__(self, matrix):
+        return Transform(self.__matrix@np.array(matrix))
+
+    def __str__(self):
+        return str(self.__matrix)
+
+    def rotate_angle(self, angle):
+    #==============================
+        rotation = transforms3d.affines.decompose(self.__matrix)[1]
+        theta = acos(rotation[0, 0])
+        if rotation[0, 1] >= 0:
+            theta = 2*PI - theta
+        angle = angle + theta
+        while angle >= 2*PI:
+            angle -= 2*PI
+        return angle
+
+    def scale_length(self, length):
+    #==============================
+        scaling = transforms3d.affines.decompose(self.__matrix)[2]
+        return (scaling[0]*length[0], scaling[1]*length[1])
+
+    def transform_point(self, point):
+    #================================
+        return (self.__matrix@[point[0], point[1], 1.0])[:2]
+
+#===============================================================================
+
 class SvgLayer(object):
     def __init__(self, size, slide, slide_number, ppt_theme, quiet=False):
         self.__slide = slide
@@ -430,10 +459,11 @@ class SvgLayer(object):
                     p2 = ellipse_point(wR, hR, stAng + swAng)
                     pt = (current_point[0] - p1[0] + p2[0],
                           current_point[1] - p1[1] + p2[1])
-                    large_arc_flag = 1 if swAng >= PI else 0
-                    svg_path.push('A', emu_to_pixels(wR), emu_to_pixels(hR),
-                                       0, large_arc_flag, 1,
-                                       *transform_point(T, pt))
+                    phi = T.rotate_angle(0)
+                    large_arc_flag = 0
+                    svg_path.push('A', *T.scale_length((wR, hR)),
+                                       180*phi/PI, large_arc_flag, 1,
+                                       *T.transform_point(pt))
                     current_point = pt
                 elif c.tag == DML('close'):
                     svg_path.push('Z')
@@ -442,24 +472,24 @@ class SvgLayer(object):
                     coords = []
                     for p in c.getchildren():
                         pt = geometry.point(p)
-                        coords.extend(transform_point(T, pt))
+                        coords.extend(T.transform_point(pt))
                         current_point = pt
                     svg_path.push('C', *coords)
                 elif c.tag == DML('lnTo'):
                     pt = geometry.point(c.pt)
-                    coords = transform_point(T, pt)
+                    coords = T.transform_point(pt)
                     svg_path.push('L', *coords)
                     current_point = pt
                 elif c.tag == DML('moveTo'):
                     pt = geometry.point(c.pt)
-                    coords = transform_point(T, pt)
+                    coords = T.transform_point(pt)
                     svg_path.push('M', *coords)
                     current_point = pt
                 elif c.tag == DML('quadBezTo'):
                     coords = []
                     for p in c.getchildren():
                         pt = geometry.point(p)
-                        coords.extend(transform_point(T, pt))
+                        coords.extend(T.transform_point(pt))
                         current_point = pt
                     svg_path.push('Q', *coords)
                 else:
@@ -523,10 +553,10 @@ class SvgExtractor(object):
         self.__theme = Theme(options.powerpoint)
         self.__slides = self.__pptx.slides
         (pptx_width, pptx_height) = (self.__pptx.slide_width, self.__pptx.slide_height)
-        self.__transform = np.array([[1.0/EMU_PER_PIXEL,                 0, 0],
-                                     [                0, 1.0/EMU_PER_PIXEL, 0],
-                                     [                0,                 0, 1]])
-        self.__svg_size = transform_point(self.__transform, (pptx_width, pptx_height))
+        self.__transform = Transform([[1.0/EMU_PER_PIXEL,                 0, 0],
+                                      [                0, 1.0/EMU_PER_PIXEL, 0],
+                                      [                0,                 0, 1]])
+        self.__svg_size = self.__transform.transform_point((pptx_width, pptx_height))
         self.__output_dir = options.output_dir
         self.__debug = options.debug
         self.__quiet = options.quiet
