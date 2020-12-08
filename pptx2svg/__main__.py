@@ -18,6 +18,10 @@
 #
 #===============================================================================
 
+__version__ = '1.0.0'
+
+#===============================================================================
+
 import colorsys
 import json
 import os
@@ -621,6 +625,7 @@ if __name__ == '__main__':
 
     parser.add_argument('-d', '--debug', action='store_true', help='save DrawML to aid with debugging')
     parser.add_argument('-q', '--quiet', action='store_true', help='do not show progress bar')
+    parser.add_argument('-v', '--version', action='version', version=__version__)
 
     parser.add_argument('--powerpoint', metavar='POWERPOINT_FILE',
                         help='the Powerpoint file to convert')
