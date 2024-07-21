@@ -3960,8 +3960,8 @@
       <gd name="yG" fmla="+- yH dyG 0" />
       <gd name="dxB" fmla="cos thh ptAng" />
       <gd name="dyB" fmla="sin thh ptAng" />
-      <gd name="xB" fmla="+- xH 0 dxB 0" />
-      <gd name="yB" fmla="+- yH 0 dyB 0" />
+      <gd name="xB" fmla="+- xH 0 dxB" />
+      <gd name="yB" fmla="+- yH 0 dyB" />
       <gd name="sx1" fmla="+- xB 0 hc" />
       <gd name="sy1" fmla="+- yB 0 vc" />
       <gd name="sx2" fmla="+- xG 0 hc" />
