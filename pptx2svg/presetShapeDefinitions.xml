@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <drawml:presetShapeDefinitions xmlns:drawml="http://www.ecma-international.org/flat/publications/standards/Ecma-376/drawingml/">
+  <!-- Updated as per document at https://mailman.vse.cz/pipermail/sc34wg4/2018-November/004555.html -->
   <drawml:presetShape name="accentBorderCallout1">
     <avLst xmlns="http://schemas.openxmlformats.org/drawingml/2006/main">
       <gd name="adj1" fmla="val 18750" />
@@ -3897,7 +3898,7 @@
       <gd name="adj5" fmla="val 12500" />
     </avLst>
     <gdLst xmlns="http://schemas.openxmlformats.org/drawingml/2006/main">
-      <gd name="a5" fmla="pin 0 adj5 25000" />
+      <gd name="a5" fmla="pin 2 adj5 25000" />
       <gd name="maxAdj1" fmla="*/ a5 2 1" />
       <gd name="a1" fmla="pin 0 adj1 maxAdj1" />
       <gd name="enAng" fmla="pin 1 adj3 21599999" />
@@ -9844,8 +9845,8 @@
       <gd name="yG" fmla="+- yH dyG 0" />
       <gd name="dxB" fmla="cos thh ptAng" />
       <gd name="dyB" fmla="sin thh ptAng" />
-      <gd name="xB" fmla="+- xH 0 dxB 0" />
-      <gd name="yB" fmla="+- yH 0 dyB 0" />
+      <gd name="xB" fmla="+- xH 0 dxB" />
+      <gd name="yB" fmla="+- yH 0 dyB" />
       <gd name="sx1" fmla="+- xB 0 hc" />
       <gd name="sy1" fmla="+- yB 0 vc" />
       <gd name="sx2" fmla="+- xG 0 hc" />
@@ -10300,8 +10301,8 @@
       <gd name="yG" fmla="+- yH dyG 0" />
       <gd name="dxB" fmla="cos thh ptAng" />
       <gd name="dyB" fmla="sin thh ptAng" />
-      <gd name="xB" fmla="+- xH 0 dxB 0" />
-      <gd name="yB" fmla="+- yH 0 dyB 0" />
+      <gd name="xB" fmla="+- xH 0 dxB" />
+      <gd name="yB" fmla="+- yH 0 dyB" />
       <gd name="sx1" fmla="+- xB 0 hc" />
       <gd name="sy1" fmla="+- yB 0 vc" />
       <gd name="sx2" fmla="+- xG 0 hc" />
@@ -17105,6 +17106,15 @@
       <gd name="dy1" fmla="sin hd2 stAng" />
       <gd name="x1" fmla="+- hc dx1 0" />
       <gd name="y1" fmla="+- vc dy1 0" />
+      <gd name="dxEdge" fmla="cos wd2 pang"/>
+      <gd name="dyEdge" fmla="sin hd2 pang"/>
+      <gd name="xEdge" fmla="+- hc dxEdge 0"/>
+      <gd name="yEdge" fmla="+- vc dyEdge 0"/>
+      <gd name="posMag" fmla="mod dxPos dyPos 0"/>
+      <gd name="edgeMag" fmla="mod dxEdge dyEdge 0"/>
+      <gd name="ahInside" fmla="+- edgeMag 0 posMag"/>
+      <gd name="xTip" fmla="?: ahInside xEdge xPos"/>
+      <gd name="yTip" fmla="?: ahInside yEdge yPos"/>
       <gd name="dx2" fmla="cos wd2 enAng" />
       <gd name="dy2" fmla="sin hd2 enAng" />
       <gd name="x2" fmla="+- hc dx2 0" />
@@ -17127,36 +17137,27 @@
       </ahXY>
     </ahLst>
     <cxnLst xmlns="http://schemas.openxmlformats.org/drawingml/2006/main">
-      <cxn ang="3cd4">
-        <pos x="hc" y="t" />
-      </cxn>
-      <cxn ang="3cd4">
-        <pos x="il" y="it" />
-      </cxn>
-      <cxn ang="cd4">
-        <pos x="il" y="ib" />
-      </cxn>
-      <cxn ang="cd4">
-        <pos x="hc" y="b" />
-      </cxn>
-      <cxn ang="cd4">
-        <pos x="ir" y="ib" />
-      </cxn>
       <cxn ang="0">
-        <pos x="r" y="vc" />
+        <pos x="r" y="vc"/>
       </cxn>
-      <cxn ang="3cd4">
-        <pos x="ir" y="it" />
+      <cxn ang="cd4">
+        <pos x="hc" y="b"/>
       </cxn>
       <cxn ang="pang">
-        <pos x="xPos" y="yPos" />
+        <pos x="xTip" y="yTip"/>
+      </cxn>
+      <cxn ang="cd2">
+        <pos x="l" y="vc"/>
+      </cxn>
+      <cxn ang="3cd4">
+        <pos x="hc" y="t"/>
       </cxn>
     </cxnLst>
     <rect l="il" t="it" r="ir" b="ib" xmlns="http://schemas.openxmlformats.org/drawingml/2006/main" />
     <pathLst xmlns="http://schemas.openxmlformats.org/drawingml/2006/main">
       <path>
         <moveTo>
-          <pt x="xPos" y="yPos" />
+          <pt x="xTip" y="yTip"/>
         </moveTo>
         <lnTo>
           <pt x="x1" y="y1" />
@@ -17191,21 +17192,29 @@
       <gd name="y1" fmla="*/ h yg1 12" />
       <gd name="y2" fmla="*/ h yg2 12" />
       <gd name="t1" fmla="?: dxPos l xPos" />
-      <gd name="xl" fmla="?: dz l t1" />
+      <gd name="xlprep" fmla="?: dz l t1"/>
+      <gd name="xlcomp" fmla="+- xlprep 0 l"/>
+      <gd name="xl" fmla="?: xlcomp l xlprep"/>
       <gd name="t2" fmla="?: dyPos x1 xPos" />
       <gd name="xt" fmla="?: dz t2 x1" />
       <gd name="t3" fmla="?: dxPos xPos r" />
-      <gd name="xr" fmla="?: dz r t3" />
+      <gd name="xrprep" fmla="?: dz r t3"/>
+      <gd name="xrcomp" fmla="+- xrprep 0 r"/>
+      <gd name="xr" fmla="?: xrcomp xrprep r"/>
       <gd name="t4" fmla="?: dyPos xPos x1" />
       <gd name="xb" fmla="?: dz t4 x1" />
       <gd name="t5" fmla="?: dxPos y1 yPos" />
       <gd name="yl" fmla="?: dz y1 t5" />
       <gd name="t6" fmla="?: dyPos t yPos" />
-      <gd name="yt" fmla="?: dz t6 t" />
+      <gd name="ytprep" fmla="?: dz t6 t"/>
+      <gd name="ytcomp" fmla="+- ytprep 0 t"/>
+      <gd name="yt" fmla="?: ytcomp t ytprep"/>
       <gd name="t7" fmla="?: dxPos yPos y1" />
       <gd name="yr" fmla="?: dz y1 t7" />
       <gd name="t8" fmla="?: dyPos yPos b" />
-      <gd name="yb" fmla="?: dz t8 b" />
+      <gd name="ybprep" fmla="?: dz t8 b"/>
+      <gd name="ybcomp" fmla="+- ybprep 0 b"/>
+      <gd name="yb" fmla="?: ybcomp ybprep b"/>
     </gdLst>
     <ahLst xmlns="http://schemas.openxmlformats.org/drawingml/2006/main">
       <ahXY gdRefX="adj1" minX="-2147483647" maxX="2147483647" gdRefY="adj2" minY="-2147483647" maxY="2147483647">
@@ -17308,21 +17317,29 @@
       <gd name="y1" fmla="*/ h yg1 12" />
       <gd name="y2" fmla="*/ h yg2 12" />
       <gd name="t1" fmla="?: dxPos l xPos" />
-      <gd name="xl" fmla="?: dz l t1" />
+      <gd name="xlprep" fmla="?: dz l t1"/>
+      <gd name="xlcomp" fmla="+- xlprep 0 l"/>
+      <gd name="xl" fmla="?: xlcomp l xlprep"/>
       <gd name="t2" fmla="?: dyPos x1 xPos" />
       <gd name="xt" fmla="?: dz t2 x1" />
       <gd name="t3" fmla="?: dxPos xPos r" />
-      <gd name="xr" fmla="?: dz r t3" />
+      <gd name="xrprep" fmla="?: dz r t3"/>
+      <gd name="xrcomp" fmla="+- xrprep 0 r"/>
+      <gd name="xr" fmla="?: xrcomp xrprep r"/>
       <gd name="t4" fmla="?: dyPos xPos x1" />
       <gd name="xb" fmla="?: dz t4 x1" />
       <gd name="t5" fmla="?: dxPos y1 yPos" />
       <gd name="yl" fmla="?: dz y1 t5" />
       <gd name="t6" fmla="?: dyPos t yPos" />
-      <gd name="yt" fmla="?: dz t6 t" />
+      <gd name="ytprep" fmla="?: dz t6 t"/>
+      <gd name="ytcomp" fmla="+- ytprep 0 t"/>
+      <gd name="yt" fmla="?: ytcomp t ytprep"/>
       <gd name="t7" fmla="?: dxPos yPos y1" />
       <gd name="yr" fmla="?: dz y1 t7" />
       <gd name="t8" fmla="?: dyPos yPos b" />
-      <gd name="yb" fmla="?: dz t8 b" />
+      <gd name="ybprep" fmla="?: dz t8 b"/>
+      <gd name="ybcomp" fmla="+- ybprep 0 b"/>
+      <gd name="yb" fmla="?: ybcomp ybprep b"/>
       <gd name="u1" fmla="*/ ss adj3 100000" />
       <gd name="u2" fmla="+- r 0 u1" />
       <gd name="v2" fmla="+- b 0 u1" />
